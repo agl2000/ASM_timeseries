@@ -7,56 +7,211 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+#install.packages("tseries")
+#install.packages("forecast")  
+library(tseries)
+library(forecast)
 ```
 
 ## R Markdown
 
 ```{r}
 
-serie=window(ts(read.table("peajes.dat"),start=1990,freq=12))
-plot(serie, main="Average Daily Intensity of traffic at tools in Spain", ylab="Thousands of vehicles")
-abline(v=1990:2020,lty=3,col=4)
-log_serie<-log(serie)
-plot(log_serie, main="Average Daily Intensity of traffic at tools in Spain", ylab="Thousands of vehicles")
-abline(v=1990:2020,lty=3,col=4)
+# 1) Reading the data and initial plots
+
+# Convert the data into a time series (freq=12 for monthly data, starting at 1990)
+serie <- window(ts(read.table("peajes.dat"), start = 1990, freq = 12))
+
+# Plot of the original series
+plot(
+  serie,
+  main = "Average Daily Intensity of Traffic at Toll Booths in Spain",
+  xlab = "Year",
+  ylab = "Thousands of Vehicles",
+  col = "blue"
+)
+abline(v = 1990:2020, lty = 3, col = "red")
+
+# Log-transformed series
+log_serie <- log(serie)
+
+# Plot of the log-transformed series
+plot(
+  log_serie,
+  main = "Log of the Average Daily Intensity of Traffic at Toll Booths in Spain",
+  xlab = "Year",
+  ylab = "Log(Thousands of Vehicles)",
+  col = "darkgreen"
+)
+abline(v = 1990:2020, lty = 3, col = "red")
+
+
+```
+
+
+```{r}
+# 2) Calculating mean and variance by year, and boxplots
+
+# Mean and variance of the original series
+m <- apply(matrix(serie, nr = 12), 2, mean)
+v <- apply(matrix(serie, nr = 12), 2, var)
+
+# Plot of mean vs variance for the original series
+plot(
+  m, v,
+  main = "Mean vs Variance (Original Series)",
+  xlab = "Mean",
+  ylab = "Variance",
+  col = "blue"
+)
+
+# Mean and variance of the log-transformed series
+m_log <- apply(matrix(log_serie, nr = 12), 2, mean)
+v_log <- apply(matrix(log_serie, nr = 12), 2, var)
+
+# Plot of mean vs variance for the log-transformed series
+plot(
+  m_log, v_log,
+  main = "Mean vs Variance (Log Series)",
+  xlab = "Mean (log scale)",
+  ylab = "Variance",
+  col = "darkgreen"
+)
+
+# By looking at these plots, we see there might not be a huge difference in variance stabilization
+
+# Boxplots by year for the log-transformed series
+boxplot(
+  log_serie ~ floor(time(serie)),
+  main = "Boxplot of the Log-Transformed Series by Year",
+  xlab = "Year",
+  ylab = "log(Thousands of Vehicles)",
+  col = "orange"
+)
+
+# Boxplots by year for the original series
+boxplot(
+  serie ~ floor(time(serie)),
+  main = "Boxplot of the Original Series by Year",
+  xlab = "Year",
+  ylab = "Thousands of Vehicles",
+  col = "lightblue"
+)
 
 ```
 
 ```{r}
-(m<-apply(matrix (serie, nr=12),2,mean))
-(v<-apply(matrix (serie, nr=12),2,var))
+# 3) Determination of the differencing order
 
-plot(m,v)
+# Apply ndiffs() and nsdiffs() to the original series
+ndiffs_original  <- ndiffs(serie)
+nsdiffs_original <- nsdiffs(serie)
 
-(m<-apply(matrix (log_serie, nr=12),2,mean))
-(v<-apply(matrix (log_serie, nr=12),2,var))
+cat("Suggested regular differencing (original):", ndiffs_original, "\n")
+cat("Suggested seasonal differencing (original):", nsdiffs_original, "\n")
 
-plot(m,v)
+# Apply ndiffs() and nsdiffs() to the log-transformed series
+ndiffs_log  <- ndiffs(log_serie)
+nsdiffs_log <- nsdiffs(log_serie)
+
+cat("Suggested regular differencing (log):", ndiffs_log, "\n")
+cat("Suggested seasonal differencing (log):", nsdiffs_log, "\n")
+```
 
 
-#by looking at the plot we can see that there is no significant difference between the variance of the serie and the log_serie
-boxplot(log_serie~floor(time(serie)))
-boxplot(serie~floor(time(serie)))
 
-#No se com fer un test amb això perque el profe simplement mirava el gràfic i en treia conclusions.
+```{r}
+# 4) Exploring seasonality and differencing
 
+# Month plot of the original series (shows seasonal patterns by month)
+monthplot(
+  serie,
+  main = "Monthplot of the Original Series",
+  ylab = "Thousands of Vehicles",
+  col = "blue"
+)
 
+# Plot the series in a matrix form (each line is a month)
+ts.plot(
+  matrix(serie, nr = 12),
+  main = "Time Series Matrix (Original)",
+  xlab = "Time",
+  ylab = "Thousands of Vehicles",
+  col = 1:12
+)
+
+# We apply diff with lag=12 to remove annual seasonality
+d12serie <- diff(serie, lag = 12)
+
+# Plot the differenced series
+plot(
+  d12serie,
+  main = "Seasonally Differenced Series (lag = 12)",
+  xlab = "Time",
+  ylab = "Differenced Values",
+  col = "purple"
+)
+
+# Month plot of the differenced series
+monthplot(
+  d12serie,
+  main = "Monthplot of the Differenced Series (lag = 12)",
+  ylab = "Differenced Values",
+  col = "purple"
+)
+
+# Matrix plot of the differenced series
+ts.plot(
+  matrix(d12serie, nr = 12),
+  main = "Time Series Matrix (Differenced)",
+  xlab = "Time",
+  ylab = "Values (D12)",
+  col = 1:12
+)
 
 ```
 
 ```{r}
-monthplot(serie)
-ts.plot(matrix(serie,nr=12))
+# Boxplots by year for the original and differenced series
 
-#We apply diff (with lag 12) to make it stationary
+# Boxplot of the original series grouped by year
+boxplot(
+  serie ~ floor(time(serie)),
+  main = "Boxplot of the Original Series by Year",
+  xlab = "Year",
+  ylab = "Thousands of Vehicles",
+  col = "lightblue"
+)
 
-d12serie<-diff(serie,lag=12)
-plot(d12serie)
+# Boxplot of the seasonally differenced series (lag=12) grouped by year
 
-monthplot(d12serie)
-ts.plot(matrix(d12serie,nr=12))
+boxplot(
+  na.omit(d12serie) ~ floor(time(na.omit(d12serie))),
+  main = "Boxplot of the Differenced Series (lag=12) by Year",
+  xlab = "Year",
+  ylab = "Differenced Values",
+  col = "lightgreen"
+)
+
+#  Stationarity tests using Augmented Dickey-Fuller (ADF) and KPSS tests
+
+# Original series
+adf_original <- adf.test(serie)
+kpss_original <- kpss.test(serie)
+
+# Differenced series (removing NAs)
+adf_diff <- adf.test(na.omit(d12serie))
+kpss_diff <- kpss.test(na.omit(d12serie))
+
+# Display the results
+adf_original
+kpss_original
+adf_diff
+kpss_diff
 
 ```
+
+
 
 ```{r}
 #We apply diff (with lag 1) to make it stationary
@@ -79,9 +234,23 @@ plot(d12d1d12serie)
 #H1: The variance and mean are constant, and the timeseries is stationary.
 
 adf.test(d12serie)
+kpss.test(d12serie)
 adf.test(d1d12serie)
+kpss.test(d1d12serie)
 adf.test(d12d12serie)
+kpss.test(d12d12serie)
 adf.test(d12d1d12serie)
+kpss.test(d12d1d12serie)
+
+# Boxplot of d1d12serie grouped by year
+
+boxplot(
+  na.omit(d1d12serie) ~ floor(time(na.omit(d1d12serie))),
+  main = "Boxplot of the Differenced Series (lag=1, lag=12) by Year",
+  xlab = "Year",
+  ylab = "Differenced Values",
+  col = "lightgreen"
+)
 
 #jo aquí diria que ens hem de quedar amb el d1d12serie perquè passa el adf test i dels qwue passen l'adf test és el que te la var. més baixa
 
@@ -93,38 +262,83 @@ par(mfrow = c(1, 2)) # Set up the plot layout
 acf(d1d12serie, main = "ACF of Stationary Series")
 pacf(d1d12serie, main = "PACF of Stationary Series")
 par(mfrow = c(1, 1)) # Reset plot layout
+
+#print all values 
+print("ACF")
+acf(d1d12serie, plot = FALSE)
+print("PACF")
+pacf(d1d12serie, plot = FALSE)
+
 ```
 
 
 ```{r}
-# Fit ARIMA models
-# 2 lags in acf
+# Assuming 'd1d12serie' is already defined and is your stationary series
+
+# Previous models from your colleague:
 model1 <- arima(d1d12serie, order = c(2, 0, 0))
-# 4 lags in pacf
 model2 <- arima(d1d12serie, order = c(0, 0, 4))
-# 2 lags in acf and 4 lags in pacf
 model3 <- arima(d1d12serie, order = c(2, 0, 4))
 
-#summart of models
-summary(model1)
-summary(model2)
-summary(model3)
+# Additional models you might consider:
+model4 <- arima(d1d12serie, order = c(1, 0, 1))  # AR(1), MA(1)
+model5 <- arima(d1d12serie, order = c(2, 0, 1))  # AR(2), MA(1)
+model6 <- arima(d1d12serie, order = c(1, 0, 2))  # AR(1), MA(2)
 
 
-#compare AIC and BIC values
-aic_values <- c(AIC(model1), AIC(model2), AIC(model3))
-bic_values <- c(BIC(model1), BIC(model2), BIC(model3))
 
-#create comparison table
-comparison<- data.frame(
-    model = c("model1", "model2", "model3"),
-    AIC = aic_values,
-    BIC = bic_values
+# Compare AIC and BIC values for all models
+aic_values <- c(
+  AIC(model1), AIC(model2), AIC(model3),
+  AIC(model4), AIC(model5), AIC(model6)
+)
+
+bic_values <- c(
+  BIC(model1), BIC(model2), BIC(model3),
+  BIC(model4), BIC(model5), BIC(model6)
+)
+
+comparison <- data.frame(
+  model = c("ARIMA(2,0,0)", "ARIMA(0,0,4)", "ARIMA(2,0,4)",
+            "ARIMA(1,0,1)", "ARIMA(2,0,1)", "ARIMA(1,0,2)"),
+  AIC = aic_values,
+  BIC = bic_values
 )
 
 print(comparison)
 
+
 ```
+
+Best model is ARIMA(2,0,4) because it has the lowest AIC and BIC values.
+Second best model is ARIMA(1,0,1) because it has the second lowest AIC and BIC values.
+
+```{r}
+# ----- ESTIMATION OF THE IDENTIFIED MODEL (ARIMA(2,0,4)) -----
+
+# Fit the ARIMA(2,0,4) model to the differenced series
+cat("Best model")
+best_model <- arima(d1d12serie, order = c(2, 0, 4))
+
+# Display a summary of the fitted model
+summary(best_model)
+
+
+cat("Second best model")
+second_best_model <- arima(d1d12serie, order = c(1, 0, 1))
+
+# Display a summary of the fitted model
+summary(second_best_model)
+
+
+
+
+
+```
+
+
+
+
 
 ```{r}
 #################Validation#################################
@@ -232,15 +446,17 @@ validation=function(model){
 
 
 ```{r}
-validation(model1)
+validation(best_model)
 
 
 ```
 ```{r}
-validation(model2)
+validation(second_best_model)
 ```
 
 ```{r}
-validation(model3)
+
+
 ```
+
 
