@@ -64,6 +64,9 @@ plot(
   ylab = "Variance",
   col = "blue"
 )
+abline(lm(v ~ m), col = 2, lty = 3)
+
+linear_model_ts <- lm(v ~ m)
 
 # Mean and variance of the log-transformed series
 m_log <- apply(matrix(log_serie, nr = 12), 2, mean)
@@ -73,10 +76,13 @@ v_log <- apply(matrix(log_serie, nr = 12), 2, var)
 plot(
   m_log, v_log,
   main = "Mean vs Variance (Log Series)",
-  xlab = "Mean (log scale)",
+  xlab = "Mean",
   ylab = "Variance",
   col = "darkgreen"
 )
+abline(lm(v_log ~ m_log), col = 2, lty = 3)
+
+linear_model_log_ts <- lm(v_log ~ m_log)
 
 # By looking at these plots, we see there might not be a huge difference in variance stabilization
 
