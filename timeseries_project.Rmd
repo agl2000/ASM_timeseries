@@ -32,20 +32,6 @@ plot(
 )
 abline(v = 1990:2020, lty = 3, col = "red")
 
-# Log-transformed series
-log_serie <- log(serie)
-
-# Plot of the log-transformed series
-plot(
-  log_serie,
-  main = "Log of the Average Daily Intensity of Traffic at Toll Booths in Spain",
-  xlab = "Year",
-  ylab = "Log(Thousands of Vehicles)",
-  col = "darkgreen"
-)
-abline(v = 1990:2020, lty = 3, col = "red")
-
-
 ```
 
 
@@ -72,6 +58,40 @@ linear_model_ts <- lm(v ~ m)
 m_log <- apply(matrix(log_serie, nr = 12), 2, mean)
 v_log <- apply(matrix(log_serie, nr = 12), 2, var)
 
+# Boxplots by year for the original series
+boxplot(
+  serie ~ floor(time(serie)),
+  main = "Boxplot of the Original Series by Year",
+  xlab = "Year",
+  ylab = "Thousands of Vehicles",
+  col = "lightblue"
+)
+
+```
+
+```{r}
+# Log-transformed series
+log_serie <- log(serie)
+
+# Plot of the log-transformed series
+plot(
+  log_serie,
+  main = "Log of the Average Daily Intensity of Traffic at Toll Booths in Spain",
+  xlab = "Year",
+  ylab = "Log(Thousands of Vehicles)",
+  col = "darkgreen"
+)
+abline(v = 1990:2020, lty = 3, col = "red")
+
+# Boxplots by year for the log-transformed series
+boxplot(
+  log_serie ~ floor(time(serie)),
+  main = "Boxplot of the Log-Transformed Series by Year",
+  xlab = "Year",
+  ylab = "log(Thousands of Vehicles)",
+  col = "orange"
+)
+
 # Plot of mean vs variance for the log-transformed series
 plot(
   m_log, v_log,
@@ -83,26 +103,6 @@ plot(
 abline(lm(v_log ~ m_log), col = 2, lty = 3)
 
 linear_model_log_ts <- lm(v_log ~ m_log)
-
-# By looking at these plots, we see there might not be a huge difference in variance stabilization
-
-# Boxplots by year for the log-transformed series
-boxplot(
-  log_serie ~ floor(time(serie)),
-  main = "Boxplot of the Log-Transformed Series by Year",
-  xlab = "Year",
-  ylab = "log(Thousands of Vehicles)",
-  col = "orange"
-)
-
-# Boxplots by year for the original series
-boxplot(
-  serie ~ floor(time(serie)),
-  main = "Boxplot of the Original Series by Year",
-  xlab = "Year",
-  ylab = "Thousands of Vehicles",
-  col = "lightblue"
-)
 
 ```
 
@@ -131,27 +131,27 @@ cat("Suggested seasonal differencing (log):", nsdiffs_log, "\n")
 
 # Month plot of the original series (shows seasonal patterns by month)
 monthplot(
-  serie,
-  main = "Monthplot of the Original Series",
+  log_serie,
+  main = "Monthplot of the Log-Transformed Original Series",
   ylab = "Thousands of Vehicles",
   col = "blue"
 )
 
 # Plot the series in a matrix form (each line is a month)
 ts.plot(
-  matrix(serie, nr = 12),
-  main = "Time Series Matrix (Original)",
+  matrix(log_serie, nr = 12),
+  main = "Yearly Seasonal Pattern (Log-Transformed)",
   xlab = "Time",
   ylab = "Thousands of Vehicles",
-  col = 1:12
+  col = rainbow(ncol(matrix(log_serie, nr = 12)))
 )
 
 # We apply diff with lag=12 to remove annual seasonality
-d12serie <- diff(serie, lag = 12)
+d12_ln_serie <- diff(log_serie, lag = 12)
 
 # Plot the differenced series
 plot(
-  d12serie,
+  d12_ln_serie,
   main = "Seasonally Differenced Series (lag = 12)",
   xlab = "Time",
   ylab = "Differenced Values",
@@ -160,7 +160,7 @@ plot(
 
 # Month plot of the differenced series
 monthplot(
-  d12serie,
+  d12_ln_serie,
   main = "Monthplot of the Differenced Series (lag = 12)",
   ylab = "Differenced Values",
   col = "purple"
@@ -168,14 +168,68 @@ monthplot(
 
 # Matrix plot of the differenced series
 ts.plot(
-  matrix(d12serie, nr = 12),
-  main = "Time Series Matrix (Differenced)",
+  matrix(d12_ln_serie, nr = 12),
+  main = "Yearly Seasonal Pattern (Differenced)",
   xlab = "Time",
   ylab = "Values (D12)",
-  col = 1:12
+  col = rainbow(ncol(matrix(log_serie, nr = 12)))
 )
 
 ```
+
+```{r}
+# Analyze whether the mean is constant in the seasonally differenced series (d12_ln_serie)
+
+# 1. Plot the seasonally differenced series
+plot(d12_ln_serie,
+  main = "Seasonally differenced log-transformed series",
+  xlab = "Time",
+  ylab = "Seasonally differenced log",
+  col = "blue",
+  type = "l"
+)
+abline(h = 0, col = "red", lty = 2, lwd = 1.5)
+
+# 2. First-order differencing of the seasonally differenced series
+d1_d12_ln_serie <- diff(d12_ln_serie)
+
+# Plot the first-order differenced series
+plot(d1_d12_ln_serie,
+  main = "First-order differenced seasonally differenced series",
+  xlab = "Time",
+  ylab = "First-order differenced log",
+  col = "darkgreen",
+  type = "l"
+)
+abline(h = 0, col = "red", lty = 2, lwd = 1.5)
+
+# 3. Second-order differencing of the already differenced series
+d1_d1_d12_ln_serie <- diff(d1_d12_ln_serie)
+
+# Plot the second-order differenced series
+plot(d1_d1_d12_ln_serie,
+  main = "Second-order differenced series",
+  xlab = "Time",
+  ylab = "Second-order differenced log",
+  col = "blue",
+  type = "l"
+)
+abline(h = 0, col = "red", lty = 2, lwd = 1.5)
+
+# 4. Calculate the variance of each series
+var_d12 <- var(d12_ln_serie, na.rm = TRUE)
+var_d1_d12 <- var(d1_d12_ln_serie, na.rm = TRUE)
+var_d1_d1_d12 <- var(d1_d1_d12_ln_serie, na.rm = TRUE)
+
+# Print the variances for comparison
+cat("Variance of seasonally differenced series: ", var_d12, "\n")
+cat("Variance of first-order differenced series: ", var_d1_d12, "\n")
+cat("Variance of second-order differenced series: ", var_d1_d1_d12, "\n")
+```
+
+
+
+
 
 ```{r}
 # Boxplots by year for the original and differenced series
@@ -221,7 +275,7 @@ kpss_diff
 
 ```{r}
 #We apply diff (with lag 1) to make it stationary
-d1d12serie<-diff(d12serie,lag=1)
+d1_d12_serie<-diff(d12serie,lag=1)
 d12d12serie<-diff(d12serie, lag=12)
 d12d1d12serie<-diff(d1d12serie, lag=12)
 

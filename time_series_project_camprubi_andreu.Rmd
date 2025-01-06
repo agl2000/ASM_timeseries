@@ -1,0 +1,267 @@
+---
+title: "Time Series Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading the time series
+
+```{r}
+serie <- ts(read.table("metro.dat"), start = 1996, freq = 12)
+```
+
+```{r}
+plot(serie, main = "Barcelona metro passengers", ylab = "thousands of passengers")
+abline(v = 1996:2020, lty = 3, col = 4)
+```
+
+## 1. Identification
+
+a) Determine the needed transformations to make the series stationary. Justify the transformations
+carried out using graphical and numerical results.
+
+```{r}
+# Is variance constant?
+# 1. Boxplots by year
+boxplot(serie ~ floor(time(serie)),
+  main = "Boxplot of metro passengers by year",
+  xlab = "Year",
+  ylab = "Thousands of passengers"
+)
+
+# 2. Mean-variance plot
+# Convert the time series into a matrix with 12 rows (months) and columns representing years
+serie_matrix <- matrix(serie, nrow = 12, byrow = FALSE)
+
+mean_values <- apply(serie_matrix, 2, mean)
+var_values <- apply(serie_matrix, 2, var)
+
+# Plot mean vs variance
+plot(mean_values, var_values,
+  main = "Mean-variance plot",
+  xlab = "Mean",
+  ylab = "Variance"
+)
+abline(lm(var_values ~ mean_values), col = 2, lty = 3)
+```
+
+```{r}
+# Try change of scale by applying a logarithm
+ln_serie <- log(serie)
+plot(ln_serie,
+  main = "Log-transformed metro passengers time series",
+  xlab = "Year",
+  ylab = "Log (thousands of passengers)"
+)
+
+abline(v = 1996:2020, col = 4, lty = 3)
+```
+
+```{r}
+# Is variance constant? Analysis for ln_serie
+
+# 1. Boxplots by year
+boxplot(ln_serie ~ floor(time(ln_serie)),
+  main = "Boxplot of Log-transformed Metro Passengers by Year",
+  xlab = "Year",
+  ylab = "Log (Thousands of Passengers)"
+)
+
+# 2. Mean-variance plot for ln_serie
+# Convert the log-transformed time series into a matrix with 12 rows (months) and columns representing years
+ln_serie_matrix <- matrix(ln_serie, nrow = 12, byrow = FALSE)
+
+# Calculate yearly means and variances for ln_serie
+ln_mean_values <- apply(ln_serie_matrix, 2, mean)
+ln_var_values <- apply(ln_serie_matrix, 2, var)
+
+# Plot mean vs variance for ln_serie
+plot(ln_mean_values, ln_var_values,
+  main = "Mean-variance Plot for Log-transformed Series",
+  xlab = "Mean (Log-transformed)",
+  ylab = "Variance (Log-transformed)"
+)
+abline(lm(ln_var_values ~ ln_mean_values), col = 2, lty = 3)
+```
+
+```{r}
+# Try another Box-Cox transformation
+library(MASS)
+
+# Estimate the optimal Box-Cox lambda using a linear model
+boxcox_fit <- boxcox(lm(serie ~ 1), lambda = seq(-2, 2, 0.1))
+optimal_lambda <- boxcox_fit$x[which.max(boxcox_fit$y)]
+
+# Apply the Box-Cox transformation with the optimal lambda
+if (abs(optimal_lambda) > 0.01) {
+  boxcox_serie <- (serie^optimal_lambda - 1) / optimal_lambda
+} else {
+  boxcox_serie <- log(serie)
+}
+
+# Plot the Box-Cox transformed series
+plot(boxcox_serie,
+  main = paste("Box-Cox transformed time teries (lambda =", round(optimal_lambda, 2), ")"),
+  xlab = "Year",
+  ylab = "Transformed (thousands of passengers)"
+)
+abline(v = 1996:2020, col = 4, lty = 3)
+```
+
+```{r}
+# Is variance constant? Analysis for boxcox_serie
+
+# 1. Boxplots by year
+boxplot(boxcox_serie ~ floor(time(boxcox_serie)),
+  main = "Boxplot of Box-Cox Transformed Metro Passengers by Year",
+  xlab = "Year",
+  ylab = "Box-Cox Transformed (Thousands of Passengers)"
+)
+
+# 2. Mean-variance plot for boxcox_serie
+# Convert the Box-Cox transformed time series into a matrix with 12 rows (months) and columns representing years
+boxcox_serie_matrix <- matrix(boxcox_serie, nrow = 12, byrow = FALSE)
+
+# Calculate yearly means and variances for boxcox_serie
+boxcox_mean_values <- apply(boxcox_serie_matrix, 2, mean)
+boxcox_var_values <- apply(boxcox_serie_matrix, 2, var)
+
+# Plot mean vs variance for boxcox_serie
+plot(boxcox_mean_values, boxcox_var_values,
+  main = "Mean-variance Plot for Box-Cox Transformed Series",
+  xlab = "Mean (Box-Cox Transformed)",
+  ylab = "Variance (Box-Cox Transformed)"
+)
+abline(lm(boxcox_var_values ~ boxcox_mean_values), col = 2, lty = 3)
+```
+
+We decide to keep the log-transformed time series.
+
+The log transformation significantly compresses the range of both the mean and variance.
+While there is still a slight relationship between the mean and variance, the slope of the trend line is less steep than in the original series. This suggests that the log transformation has reduced the degree of non-constant variance, though it has not entirely eliminated it.
+The relationship between the mean and variance is less pronounced in the log-transformed series compared to the original series.
+Variance across years is more stabilized after the transformation.
+
+```{r}
+# Analyse the presence of a seasonal pattern in the log-transformed series
+
+# 1. Check for seasonal pattern using graphical diagnostic tools
+# Monthplot
+monthplot(ln_serie,
+  main = "Seasonal pattern in log-transformed series",
+  ylab = "Log (thousands of passengers)",
+  xlab = "Month",
+  col = "blue"
+)
+
+# The monthplot shows that the means for each month are not at the same level,
+# indicating a clear seasonal pattern.
+
+# 2. Use a time series plot to visualise seasonality for each year
+ts_matrix <- matrix(ln_serie, nrow = 12) # Convert time series into a 12-row matrix (months)
+ts.plot(ts_matrix,
+  col = rainbow(ncol(ts_matrix)),
+  main = "Yearly seasonal pattern in log-transformed series",
+  xlab = "Month",
+  ylab = "Log (thousands of passengers)"
+)
+
+# 3. Remove seasonal pattern using seasonal differencing (lag 12)
+d12_ln_serie <- diff(ln_serie, lag = 12)
+
+# Plot the seasonally differenced series
+plot(d12_ln_serie,
+  main = "Seasonally differenced log-transformed series",
+  ylab = "Seasonally differenced log (thousands of passengers)",
+  xlab = "Time",
+  col = "darkgreen"
+)
+
+# 4. Check for residual seasonality in the differenced series
+# Monthplot for the seasonally differenced series
+monthplot(d12_ln_serie,
+  main = "Seasonal pattern in seasonally differenced series",
+  ylab = "Seasonally differenced log (thousands of passengers)",
+  xlab = "Month",
+  col = "purple"
+)
+
+# Time series plot of the seasonally differenced matrix
+d12_matrix <- matrix(d12_ln_serie, nrow = 12) # Convert differenced series into a matrix
+ts.plot(d12_matrix,
+  col = rainbow(ncol(d12_matrix)), # Use rainbow colors to distinguish years
+  main = "Yearly seasonal pattern in seasonally differenced series",
+  xlab = "Month",
+  ylab = "Seasonally differenced log (thousands of passengers)"
+)
+```
+
+```{r}
+# Analyze whether the mean is constant in the seasonally differenced series (d12_ln_serie)
+
+# 1. Plot the seasonally differenced series
+plot(d12_ln_serie,
+  main = "Seasonally differenced log-transformed series",
+  xlab = "Time",
+  ylab = "Seasonally differenced log (thousands of passengers)",
+  col = "blue",
+  type = "l"
+)
+abline(h = 0, col = "red", lty = 2, lwd = 1.5)
+
+# 2. First-order differencing of the seasonally differenced series
+d1_d12_ln_serie <- diff(d12_ln_serie)
+
+# Plot the first-order differenced series
+plot(d1_d12_ln_serie,
+  main = "First-order differenced seasonally differenced series",
+  xlab = "Time",
+  ylab = "First-order differenced log (thousands of passengers)",
+  col = "darkgreen",
+  type = "l"
+)
+abline(h = 0, col = "red", lty = 2, lwd = 1.5)
+
+# 3. Second-order differencing of the already differenced series
+d1_d1_d12_ln_serie <- diff(d1_d12_ln_serie)
+
+# Plot the second-order differenced series
+plot(d1_d1_d12_ln_serie,
+  main = "Second-order differenced series",
+  xlab = "Time",
+  ylab = "Second-order differenced log (thousands of passengers)",
+  col = "blue",
+  type = "l"
+)
+abline(h = 0, col = "red", lty = 2, lwd = 1.5)
+
+# 4. Calculate the variance of each series
+var_d12 <- var(d12_ln_serie, na.rm = TRUE)
+var_d1_d12 <- var(d1_d12_ln_serie, na.rm = TRUE)
+var_d1_d1_d12 <- var(d1_d1_d12_ln_serie, na.rm = TRUE)
+
+# Print the variances for comparison
+cat("Variance of seasonally differenced series: ", var_d12, "\n")
+cat("Variance of first-order differenced series: ", var_d1_d12, "\n")
+cat("Variance of second-order differenced series: ", var_d1_d1_d12, "\n")
+```
+
+We keep the time series d12_ln_serie, when applying regular differences to it the variance increases indicating overdifferentiation.
+
+b) Analyze the ACF and PACF of the stationary series to identify at least two plausible models. Reason
+about what features of the correlograms you use to identify these models.
+
+```{r}
+# Plot ACF and PACF
+par(mfrow = c(1, 2))
+acf(d12_ln_serie, main = "ACF of d12_ln_serie")
+pacf(d12_ln_serie, main = "PACF of d12_ln_serie")
+par(mfrow = c(1, 1))
+```
+
+AR(2)
+
+ARMA(1, 1)
