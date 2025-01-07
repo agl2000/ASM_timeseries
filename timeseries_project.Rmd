@@ -500,20 +500,48 @@ validation(second_best_model)
 ```
 
 ```{r}
-# Make a prediction using the best model
-pred <- predict(best_model, n.ahead = 12)
-pr <- ts(c(tail(d1_d12_ln_serie, 1), pred$pred), start = end(d1_d12_ln_serie), freq = 12)
-se <- ts(c(0, pred$se), start = end(d1_d12_ln_serie), freq = 12)
-
-# Intervals
-tl <- ts(exp(pr - 1.96 * se), start = end(d1_d12_ln_serie), freq = 12)
-tu <- ts(exp(pr + 1.96 * se), start = end(d1_d12_ln_serie), freq = 12)
-pr <- ts(exp(pr), start = end(d1_d12_ln_serie), freq = 12)
-
-# Plot the prediction
-ts.plot(serie, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = end(d1_d12_ln_serie)[1] + c(-2, +2), type = "o", main = paste("Model ARIMA(", paste(c(2, 0, 4), collapse = ","), ")", sep = ""))
-abline(v = (end(d1_d12_ln_serie)[1] - 2):(end(d1_d12_ln_serie)[1] + 2), lty = 3, col = 4)
+ultim=c(2019,12)
 
 ```
+
+
+```{r}
+# Make a prediction using the best model
+library(forecast)
+forecast_result <- forecast(best_model, h = 12)
+
+# Back-transform the predictions
+# Step 1: Reverse the second differencing
+last_diff <- tail(d1_d12_ln_serie, 1)
+pr <- cumsum(forecast_result$mean) + as.vector(last_diff)
+
+# Step 2: Reverse the seasonal differencing
+last_seasonal_diff <- tail(log_serie, 12)
+pr <- cumsum(pr) + as.vector(last_seasonal_diff)
+
+# Step 3: Reverse the log transformation
+pr <- exp(pr)
+
+# Intervals
+tl <- exp(cumsum(forecast_result$lower[,2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
+tu <- exp(cumsum(forecast_result$upper[,2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
+
+# Ensure all time series have the same length and time range
+serie_end <- end(serie)
+serie_extended <- window(serie, end = serie_end + c(0, 12))
+
+# Create time series objects for the prediction intervals
+tl <- ts(tl, start = ultim, freq = 12)
+tu <- ts(tu, start = ultim, freq = 12)
+pr <- ts(pr, start = ultim, freq = 12)
+
+# Plot the prediction
+ts.plot(serie_extended, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = c(serie_end[1] - 2, serie_end[1] + 2), type = "o", main = paste("Model ARIMA(", paste(c(2, 0, 4), collapse = ","), ")", sep = ""))
+abline(v = (serie_end[1] - 2):(serie_end[1] + 2), lty = 3, col = 4)
+
+# Print the predicted values
+print(pr)
+```
+
 
 
