@@ -217,14 +217,14 @@ plot(d1_d1_d12_ln_serie,
 abline(h = 0, col = "red", lty = 2, lwd = 1.5)
 
 # 4. Calculate the variance of each series
-var_d12 <- var(d12_ln_serie, na.rm = TRUE)
-var_d1_d12 <- var(d1_d12_ln_serie, na.rm = TRUE)
-var_d1_d1_d12 <- var(d1_d1_d12_ln_serie, na.rm = TRUE)
+var_d12_ln <- var(d12_ln_serie, na.rm = TRUE)
+var_d1_d12_ln <- var(d1_d12_ln_serie, na.rm = TRUE)
+var_d1_d1_d12_ln <- var(d1_d1_d12_ln_serie, na.rm = TRUE)
 
 # Print the variances for comparison
-cat("Variance of seasonally differenced series: ", var_d12, "\n")
-cat("Variance of first-order differenced series: ", var_d1_d12, "\n")
-cat("Variance of second-order differenced series: ", var_d1_d1_d12, "\n")
+cat("Variance of seasonally differenced series: ", var_d12_ln, "\n")
+cat("Variance of first-order differenced series: ", var_d1_d12_ln, "\n")
+cat("Variance of second-order differenced series: ", var_d1_d1_d12_ln, "\n")
 ```
 
 
@@ -236,7 +236,7 @@ cat("Variance of second-order differenced series: ", var_d1_d1_d12, "\n")
 
 # Boxplot of the original series grouped by year
 boxplot(
-  serie ~ floor(time(serie)),
+  serie ~ floor(time(log_serie)),
   main = "Boxplot of the Original Series by Year",
   xlab = "Year",
   ylab = "Thousands of Vehicles",
@@ -246,7 +246,7 @@ boxplot(
 # Boxplot of the seasonally differenced series (lag=12) grouped by year
 
 boxplot(
-  na.omit(d12serie) ~ floor(time(na.omit(d12serie))),
+  na.omit(d12_ln_serie) ~ floor(time(na.omit(d12_ln_serie))),
   main = "Boxplot of the Differenced Series (lag=12) by Year",
   xlab = "Year",
   ylab = "Differenced Values",
@@ -256,56 +256,41 @@ boxplot(
 #  Stationarity tests using Augmented Dickey-Fuller (ADF) and KPSS tests
 
 # Original series
-adf_original <- adf.test(serie)
-kpss_original <- kpss.test(serie)
+adf_original <- adf.test(log_serie)
+kpss_original <- kpss.test(log_serie)
+
+# Differenced series seasonally (removing NAs)
+adf_diff <- adf.test(na.omit(d12_ln_serie))
+kpss_diff <- kpss.test(na.omit(d12_ln_serie))
 
 # Differenced series (removing NAs)
-adf_diff <- adf.test(na.omit(d12serie))
-kpss_diff <- kpss.test(na.omit(d12serie))
+adf_diff_first <- adf.test(na.omit(d1_d12_ln_serie))
+kpss_diff_first <- kpss.test(na.omit(d1_d12_ln_serie))
 
 # Display the results
+print("adf test of the log dataset")
 adf_original
+print("kpss test of the log dataset")
 kpss_original
+print("adf test of the seasonaly differenced log dataset")
 adf_diff
+print("kpss test of the seasonaly differenced log dataset")
 kpss_diff
+print("adf test of the seasonaly differenced and first-order difference log dataset")
+adf_diff_first
+print("kpss test of the seasonaly differenced and first-order difference log dataset")
+kpss_diff_first
 
 ```
 
 
 
 ```{r}
-#We apply diff (with lag 1) to make it stationary
-d1_d12_serie<-diff(d12serie,lag=1)
-d12d12serie<-diff(d12serie, lag=12)
-d12d1d12serie<-diff(d1d12serie, lag=12)
-
-var(d12serie)
-var(d1d12serie)
-var(d12d12serie)
-var(d12d1d12serie)
-
-plot(d12serie)
-plot(d1d12serie)
-plot(d12d12serie)
-plot(d12d1d12serie)
-
-#perform adf test
-#H0: The variance and mean are not constant, and the timeseries is not stationary.
-#H1: The variance and mean are constant, and the timeseries is stationary.
-
-adf.test(d12serie)
-kpss.test(d12serie)
-adf.test(d1d12serie)
-kpss.test(d1d12serie)
-adf.test(d12d12serie)
-kpss.test(d12d12serie)
-adf.test(d12d1d12serie)
-kpss.test(d12d1d12serie)
 
 # Boxplot of d1d12serie grouped by year
 
 boxplot(
-  na.omit(d1d12serie) ~ floor(time(na.omit(d1d12serie))),
+  na.omit(d1_d12_ln_serie) ~ floor(time(na.omit(d1_d12_ln_serie))),
   main = "Boxplot of the Differenced Series (lag=1, lag=12) by Year",
   xlab = "Year",
   ylab = "Differenced Values",
@@ -319,15 +304,15 @@ boxplot(
 ```{r}
 # Plot ACF and PACF for the stationary series
 par(mfrow = c(1, 2)) # Set up the plot layout
-acf(d1d12serie, main = "ACF of Stationary Series")
-pacf(d1d12serie, main = "PACF of Stationary Series")
+acf(d1_d12_ln_serie, main = "ACF of Stationary Series")
+pacf(d1_d12_ln_serie, main = "PACF of Stationary Series")
 par(mfrow = c(1, 1)) # Reset plot layout
 
 #print all values 
 print("ACF")
-acf(d1d12serie, plot = FALSE)
+acf(d1_d12_ln_serie, plot = FALSE)
 print("PACF")
-pacf(d1d12serie, plot = FALSE)
+pacf(d1_d12_ln_serie, plot = FALSE)
 
 ```
 
@@ -336,14 +321,14 @@ pacf(d1d12serie, plot = FALSE)
 # Assuming 'd1d12serie' is already defined and is your stationary series
 
 # Previous models from your colleague:
-model1 <- arima(d1d12serie, order = c(2, 0, 0))
-model2 <- arima(d1d12serie, order = c(0, 0, 4))
-model3 <- arima(d1d12serie, order = c(2, 0, 4))
+model1 <- arima(d1_d12_ln_serie, order = c(2, 0, 0))
+model2 <- arima(d1_d12_ln_serie, order = c(0, 0, 4))
+model3 <- arima(d1_d12_ln_serie, order = c(2, 0, 4))
 
 # Additional models you might consider:
-model4 <- arima(d1d12serie, order = c(1, 0, 1))  # AR(1), MA(1)
-model5 <- arima(d1d12serie, order = c(2, 0, 1))  # AR(2), MA(1)
-model6 <- arima(d1d12serie, order = c(1, 0, 2))  # AR(1), MA(2)
+model4 <- arima(d1_d12_ln_serie, order = c(1, 0, 1))  # AR(1), MA(1)
+model5 <- arima(d1_d12_ln_serie, order = c(2, 0, 1))  # AR(2), MA(1)
+model6 <- arima(d1_d12_ln_serie, order = c(1, 0, 2))  # AR(1), MA(2)
 
 
 
@@ -378,14 +363,14 @@ Second best model is ARIMA(1,0,1) because it has the second lowest AIC and BIC v
 
 # Fit the ARIMA(2,0,4) model to the differenced series
 cat("Best model")
-best_model <- arima(d1d12serie, order = c(2, 0, 4))
+best_model <- arima(d1_d12_ln_serie, order = c(2, 0, 4))
 
 # Display a summary of the fitted model
 summary(best_model)
 
 
 cat("Second best model")
-second_best_model <- arima(d1d12serie, order = c(1, 0, 1))
+second_best_model <- arima(d1_d12_ln_serie, order = c(1, 0, 1))
 
 # Display a summary of the fitted model
 summary(second_best_model)
@@ -515,7 +500,19 @@ validation(second_best_model)
 ```
 
 ```{r}
+# Make a prediction using the best model
+pred <- predict(best_model, n.ahead = 12)
+pr <- ts(c(tail(d1_d12_ln_serie, 1), pred$pred), start = end(d1_d12_ln_serie), freq = 12)
+se <- ts(c(0, pred$se), start = end(d1_d12_ln_serie), freq = 12)
 
+# Intervals
+tl <- ts(exp(pr - 1.96 * se), start = end(d1_d12_ln_serie), freq = 12)
+tu <- ts(exp(pr + 1.96 * se), start = end(d1_d12_ln_serie), freq = 12)
+pr <- ts(exp(pr), start = end(d1_d12_ln_serie), freq = 12)
+
+# Plot the prediction
+ts.plot(serie, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = end(d1_d12_ln_serie)[1] + c(-2, +2), type = "o", main = paste("Model ARIMA(", paste(c(2, 0, 4), collapse = ","), ")", sep = ""))
+abline(v = (end(d1_d12_ln_serie)[1] - 2):(end(d1_d12_ln_serie)[1] + 2), lty = 3, col = 4)
 
 ```
 
