@@ -504,7 +504,7 @@ forecast_result <- forecast(best_model, h = 12)
 
 # Back-transform the predictions
 # Step 1: Reverse the second differencing
-last_diff <- tail(d1_d12_ln_serie, 1)
+last_diff <- tail(d12_ln_serie, 1)
 pr <- cumsum(forecast_result$mean) + as.vector(last_diff)
 
 # Step 2: Reverse the seasonal differencing
@@ -523,12 +523,12 @@ serie_end <- end(serie)
 serie_extended <- window(serie, end = serie_end + c(0, 12))
 
 # Create time series objects for the prediction intervals
-tl <- ts(tl, start = ultim, freq = 12)
-tu <- ts(tu, start = ultim, freq = 12)
-pr <- ts(pr, start = ultim, freq = 12)
+tl <- ts(c(tail(serie,1),tl), start = ultim, freq = 12)
+tu <- ts(c(tail(serie,1),tu), start = ultim, freq = 12)
+pr <- ts(c(tail(serie,1),pr), start = ultim, freq = 12)
 
 # Plot the prediction
-ts.plot(serie_extended, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = c(serie_end[1] - 2, serie_end[1] + 2), type = "o", main = paste("Model ARIMA(", paste(c(2, 0, 4), collapse = ","), ")", sep = ""))
+ts.plot(serie, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = c(serie_end[1] - 2, serie_end[1] + 2), type = "o", main = paste("Model ARIMA(", paste(c(2, 0, 4), collapse = ","), ")", sep = ""))
 abline(v = (serie_end[1] - 2):(serie_end[1] + 2), lty = 3, col = 4)
 
 # Print the predicted values
