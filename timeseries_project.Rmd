@@ -54,6 +54,9 @@ abline(lm(v ~ m), col = 2, lty = 3)
 
 linear_model_ts <- lm(v ~ m)
 
+# Log-transformed series
+log_serie <- log(serie)
+
 # Mean and variance of the log-transformed series
 m_log <- apply(matrix(log_serie, nr = 12), 2, mean)
 v_log <- apply(matrix(log_serie, nr = 12), 2, var)
@@ -237,7 +240,7 @@ cat("Variance of second-order differenced series: ", var_d1_d1_d12_ln, "\n")
 # Boxplot of the original series grouped by year
 boxplot(
   serie ~ floor(time(log_serie)),
-  main = "Boxplot of the Original Series by Year",
+  main = "Boxplot of the Log Series by Year",
   xlab = "Year",
   ylab = "Thousands of Vehicles",
   col = "lightblue"
@@ -297,7 +300,6 @@ boxplot(
   col = "lightgreen"
 )
 
-#jo aquí diria que ens hem de quedar amb el d1d12serie perquè passa el adf test i dels qwue passen l'adf test és el que te la var. més baixa
 
 ```
 
@@ -320,32 +322,22 @@ pacf(d1_d12_ln_serie, plot = FALSE)
 ```{r}
 # Assuming 'd1d12serie' is already defined and is your stationary series
 
-# Previous models from your colleague:
-model1 <- arima(d1_d12_ln_serie, order = c(2, 0, 0))
-model2 <- arima(d1_d12_ln_serie, order = c(0, 0, 4))
-model3 <- arima(d1_d12_ln_serie, order = c(2, 0, 4))
-
-# Additional models you might consider:
-model4 <- arima(d1_d12_ln_serie, order = c(1, 0, 1))  # AR(1), MA(1)
-model5 <- arima(d1_d12_ln_serie, order = c(2, 0, 1))  # AR(2), MA(1)
-model6 <- arima(d1_d12_ln_serie, order = c(1, 0, 2))  # AR(1), MA(2)
-
-
+# MA(2)
+model1 <- arima(d1_d12_ln_serie, order = c(0, 0, 2))
+# ARMA(1,0,1)
+model2 <- arima(d1_d12_ln_serie, order = c(1, 0, 1))
 
 # Compare AIC and BIC values for all models
 aic_values <- c(
-  AIC(model1), AIC(model2), AIC(model3),
-  AIC(model4), AIC(model5), AIC(model6)
+  AIC(model1), AIC(model2)
 )
 
 bic_values <- c(
-  BIC(model1), BIC(model2), BIC(model3),
-  BIC(model4), BIC(model5), BIC(model6)
+  BIC(model1), BIC(model2)
 )
 
 comparison <- data.frame(
-  model = c("ARIMA(2,0,0)", "ARIMA(0,0,4)", "ARIMA(2,0,4)",
-            "ARIMA(1,0,1)", "ARIMA(2,0,1)", "ARIMA(1,0,2)"),
+  model = c("ARIMA(0,0,2)", "ARIMA(1,0,1)"),
   AIC = aic_values,
   BIC = bic_values
 )
@@ -355,15 +347,15 @@ print(comparison)
 
 ```
 
-Best model is ARIMA(2,0,4) because it has the lowest AIC and BIC values.
+Best model is ARIMA(0,0,2) because it has the lowest AIC and BIC values.
 Second best model is ARIMA(1,0,1) because it has the second lowest AIC and BIC values.
 
 ```{r}
-# ----- ESTIMATION OF THE IDENTIFIED MODEL (ARIMA(2,0,4)) -----
+# ----- ESTIMATION OF THE IDENTIFIED MODEL (ARIMA(0,0,2)) -----
 
-# Fit the ARIMA(2,0,4) model to the differenced series
+# Fit the ARIMA(0,0,2) model to the differenced series
 cat("Best model")
-best_model <- arima(d1_d12_ln_serie, order = c(2, 0, 4))
+best_model <- arima(d1_d12_ln_serie, order = c(0, 0, 2))
 
 # Display a summary of the fitted model
 summary(best_model)
