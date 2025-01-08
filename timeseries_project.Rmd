@@ -518,9 +518,6 @@ pr <- exp(pr)
 tl <- exp(cumsum(forecast_result$lower[,2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
 tu <- exp(cumsum(forecast_result$upper[,2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
 
-# Ensure all time series have the same length and time range
-serie_end <- end(serie)
-serie_extended <- window(serie, end = serie_end + c(0, 12))
 
 # Create time series objects for the prediction intervals
 tl <- ts(c(tail(serie,1),tl), start = ultim, freq = 12)
