@@ -7,8 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# install.packages("tseries")
-# install.packages("forecast")
+#install.packages("tseries")
+#install.packages("forecast")  
 library(tseries)
 library(forecast)
 ```
@@ -16,6 +16,7 @@ library(forecast)
 ## R Markdown
 
 ```{r}
+
 # 1) Reading the data and initial plots
 
 # Convert the data into a time series (freq=12 for monthly data, starting at 1990)
@@ -30,6 +31,7 @@ plot(
   col = "blue"
 )
 abline(v = 1990:2020, lty = 3, col = "red")
+
 ```
 
 
@@ -67,6 +69,7 @@ boxplot(
   ylab = "Thousands of Vehicles",
   col = "lightblue"
 )
+
 ```
 
 ```{r}
@@ -103,20 +106,21 @@ plot(
 abline(lm(v_log ~ m_log), col = 2, lty = 3)
 
 linear_model_log_ts <- lm(v_log ~ m_log)
+
 ```
 
 ```{r}
 # 3) Determination of the differencing order
 
 # Apply ndiffs() and nsdiffs() to the original series
-ndiffs_original <- ndiffs(serie)
+ndiffs_original  <- ndiffs(serie)
 nsdiffs_original <- nsdiffs(serie)
 
 cat("Suggested regular differencing (original):", ndiffs_original, "\n")
 cat("Suggested seasonal differencing (original):", nsdiffs_original, "\n")
 
 # Apply ndiffs() and nsdiffs() to the log-transformed series
-ndiffs_log <- ndiffs(log_serie)
+ndiffs_log  <- ndiffs(log_serie)
 nsdiffs_log <- nsdiffs(log_serie)
 
 cat("Suggested regular differencing (log):", ndiffs_log, "\n")
@@ -173,6 +177,7 @@ ts.plot(
   ylab = "Values (D12)",
   col = rainbow(ncol(matrix(log_serie, nr = 12)))
 )
+
 ```
 
 ```{r}
@@ -278,11 +283,13 @@ print("adf test of the seasonaly differenced and first-order difference log data
 adf_diff_first
 print("kpss test of the seasonaly differenced and first-order difference log dataset")
 kpss_diff_first
+
 ```
 
 
 
 ```{r}
+
 # Boxplot of d1d12serie grouped by year
 
 boxplot(
@@ -292,6 +299,8 @@ boxplot(
   ylab = "Differenced Values",
   col = "lightgreen"
 )
+
+
 ```
 
 ```{r}
@@ -301,11 +310,12 @@ acf(d1_d12_ln_serie, main = "ACF of Stationary Series")
 pacf(d1_d12_ln_serie, main = "PACF of Stationary Series")
 par(mfrow = c(1, 1)) # Reset plot layout
 
-# print all values
+#print all values 
 print("ACF")
 acf(d1_d12_ln_serie, plot = FALSE)
 print("PACF")
 pacf(d1_d12_ln_serie, plot = FALSE)
+
 ```
 
 
@@ -333,6 +343,8 @@ comparison <- data.frame(
 )
 
 print(comparison)
+
+
 ```
 
 Best model is ARIMA(0,0,2) because it has the lowest AIC and BIC values.
@@ -354,6 +366,11 @@ second_best_model <- arima(d1_d12_ln_serie, order = c(1, 0, 1))
 
 # Display a summary of the fitted model
 summary(second_best_model)
+
+
+
+
+
 ```
 
 
@@ -361,111 +378,105 @@ summary(second_best_model)
 
 
 ```{r}
-################# Validation#################################
-validation <- function(model) {
-  s <- frequency(get(model$series))
-  resid <- model$residuals
-  par(mfrow = c(2, 2), mar = c(3, 3, 3, 3))
-  # Residuals plot
-  plot(resid, main = "Residuals")
-  abline(h = 0)
-  abline(h = c(-3 * sd(resid), 3 * sd(resid)), lty = 3, col = 4)
-  # Square Root of absolute values of residuals (Homocedasticity)
-  scatter.smooth(sqrt(abs(resid)),
-    main = "Square Root of Absolute residuals",
-    lpars = list(col = 2)
-  )
-
-  # Normal plot of residuals
+#################Validation#################################
+validation=function(model){
+  s=frequency(get(model$series))
+  resid=model$residuals
+  par(mfrow=c(2,2),mar=c(3,3,3,3))
+  #Residuals plot
+  plot(resid,main="Residuals")
+  abline(h=0)
+  abline(h=c(-3*sd(resid),3*sd(resid)),lty=3,col=4)
+  #Square Root of absolute values of residuals (Homocedasticity)
+  scatter.smooth(sqrt(abs(resid)),main="Square Root of Absolute residuals",
+                 lpars=list(col=2))
+  
+  #Normal plot of residuals
   qqnorm(resid)
-  qqline(resid, col = 2, lwd = 2)
-
-  ## Histogram of residuals with normal curve
-  hist(resid, breaks = 20, freq = FALSE)
-  curve(dnorm(x, mean = mean(resid), sd = sd(resid)), col = 2, add = T)
-
-
-  # ACF & PACF of residuals
-  par(mfrow = c(1, 2))
-  acf(resid, ylim = c(-1, 1), lag.max = 60, col = c(2, rep(1, s - 1)), lwd = 1)
-  pacf(resid, ylim = c(-1, 1), lag.max = 60, col = c(rep(1, s - 1), 2), lwd = 1)
-  par(mfrow = c(1, 1))
-
-  # Ljung-Box p-values
-  par(mar = c(2, 2, 1, 1))
-  tsdiag(model, gof.lag = 7 * s)
+  qqline(resid,col=2,lwd=2)
+  
+  ##Histogram of residuals with normal curve
+  hist(resid,breaks=20,freq=FALSE)
+  curve(dnorm(x,mean=mean(resid),sd=sd(resid)),col=2,add=T)
+  
+  
+  #ACF & PACF of residuals
+  par(mfrow=c(1,2))
+  acf(resid,ylim=c(-1,1),lag.max=60,col=c(2,rep(1,s-1)),lwd=1)
+  pacf(resid,ylim=c(-1,1),lag.max=60,col=c(rep(1,s-1),2),lwd=1)
+  par(mfrow=c(1,1))
+  
+  #Ljung-Box p-values
+  par(mar=c(2,2,1,1))
+  tsdiag(model,gof.lag=7*s)
   cat("\n--------------------------------------------------------------------\n")
   print(model)
-
-  # Stationary and Invertible
-  cat(
-    "\nModul of AR Characteristic polynomial Roots: ",
-    Mod(polyroot(c(1, -model$model$phi))), "\n"
-  )
-  cat(
-    "\nModul of MA Characteristic polynomial Roots: ",
-    Mod(polyroot(c(1, model$model$theta))), "\n"
-  )
-
-  suppressMessages(require(forecast, quietly = TRUE, warn.conflicts = FALSE))
+  
+  #Stationary and Invertible
+  cat("\nModul of AR Characteristic polynomial Roots: ", 
+      Mod(polyroot(c(1,-model$model$phi))),"\n")
+  cat("\nModul of MA Characteristic polynomial Roots: ",
+      Mod(polyroot(c(1,model$model$theta))),"\n")
+  
+  suppressMessages(require(forecast,quietly=TRUE,warn.conflicts=FALSE))
   plot(model)
-
-  # Model expressed as an MA infinity (psi-weights)
-  psis <- ARMAtoMA(ar = model$model$phi, ma = model$model$theta, lag.max = 36)
-  names(psis) <- paste("psi", 1:36)
+  
+  #Model expressed as an MA infinity (psi-weights)
+  psis=ARMAtoMA(ar=model$model$phi,ma=model$model$theta,lag.max=36)
+  names(psis)=paste("psi",1:36)
   cat("\nPsi-weights (MA(inf))\n")
   cat("\n--------------------\n")
   print(psis[1:24])
-
-  # Model expressed as an AR infinity (pi-weights)
-  pis <- -ARMAtoMA(ar = -model$model$theta, ma = -model$model$phi, lag.max = 36)
-  names(pis) <- paste("pi", 1:36)
+  
+  #Model expressed as an AR infinity (pi-weights)
+  pis=-ARMAtoMA(ar=-model$model$theta,ma=-model$model$phi,lag.max=36)
+  names(pis)=paste("pi",1:36)
   cat("\nPi-weights (AR(inf))\n")
   cat("\n--------------------\n")
   print(pis[1:24])
-
+   
   cat("\nDescriptive Statistics for the Residuals\n")
-  cat("\n----------------------------------------\n")
-
-  suppressMessages(require(fBasics, quietly = TRUE, warn.conflicts = FALSE))
-  ## Anderson-Darling test
+  cat("\n----------------------------------------\n") 
+  
+  suppressMessages(require(fBasics,quietly=TRUE,warn.conflicts=FALSE))
+  ##Anderson-Darling test
   print(basicStats(resid))
-
+  
   ## Add here complementary tests (use with caution!)
-  ## ---------------------------------------------------------
+  ##---------------------------------------------------------
   cat("\nNormality Tests\n")
   cat("\n--------------------\n")
-
-  ## Shapiro-Wilks Normality test
+ 
+  ##Shapiro-Wilks Normality test
   print(shapiro.test(resid))
 
-  suppressMessages(require(nortest, quietly = TRUE, warn.conflicts = FALSE))
-  ## Anderson-Darling test
+  suppressMessages(require(nortest,quietly=TRUE,warn.conflicts=FALSE))
+  ##Anderson-Darling test
   print(ad.test(resid))
-
-  suppressMessages(require(tseries, quietly = TRUE, warn.conflicts = FALSE))
-  ## Jarque-Bera test
+  
+  suppressMessages(require(tseries,quietly=TRUE,warn.conflicts=FALSE))
+  ##Jarque-Bera test
   print(jarque.bera.test(resid))
-
+  
   cat("\nHomoscedasticity Test\n")
   cat("\n--------------------\n")
-  suppressMessages(require(lmtest, quietly = TRUE, warn.conflicts = FALSE))
-  ## Breusch-Pagan test
-  obs <- get(model$series)
-  print(bptest(resid ~ I(obs - resid)))
-
+  suppressMessages(require(lmtest,quietly=TRUE,warn.conflicts=FALSE))
+  ##Breusch-Pagan test
+  obs=get(model$series)
+  print(bptest(resid~I(obs-resid)))
+  
   cat("\nIndependence Tests\n")
   cat("\n--------------------\n")
-
-  ## Durbin-Watson test
-  print(dwtest(resid ~ I(1:length(resid))))
-
-  ## Ljung-Box test
+  
+  ##Durbin-Watson test
+  print(dwtest(resid~I(1:length(resid))))
+  
+  ##Ljung-Box test
   cat("\nLjung-Box test\n")
-  print(t(apply(matrix(c(1:4, (1:4) * s)), 1, function(el) {
-    te <- Box.test(resid, type = "Ljung-Box", lag = el)
-    c(lag = (te$parameter), statistic = te$statistic[[1]], p.value = te$p.value)
-  })))
+  print(t(apply(matrix(c(1:4,(1:4)*s)),1,function(el) {
+    te=Box.test(resid,type="Ljung-Box",lag=el)
+    c(lag=(te$parameter),statistic=te$statistic[[1]],p.value=te$p.value)})))
+  
 }
 ################# Fi Validation #################################
 ```
@@ -473,15 +484,48 @@ validation <- function(model) {
 
 ```{r}
 validation(best_model)
+
+
 ```
 ```{r}
 validation(second_best_model)
 ```
 
+## Checking the stability of the proposed models
 ```{r}
-ultim <- c(2019, 12)
+ultim <- c(2018, 12)
+
+# Model 1: ARIMA(0, 0 ,2)
+pdq <- c(0, 0, 2)
+
+arima(d1_d12_ln_serie, order = c(0, 0, 2))
+
+serie_2 <- window(d1_d12_ln_serie, end = ultim)
+
+serie_1 <- window(d1_d12_ln_serie, end = ultim + c(1, 0))
+
+mod_1 <- arima(serie_1, order = pdq)
+mod_2 <- arima(serie_2, order = pdq)
+
+mod_1
+mod_2
 ```
 
+```{r}
+# Model 2: ARIMA(1, 0 ,1)
+pdq <- c(1, 0, 1)
+
+serie_2 <- window(d1_d12_ln_serie, end = ultim)
+
+serie_1 <- window(d1_d12_ln_serie, end = ultim + c(1, 0))
+
+mod_1 <- arima(serie_1, order = pdq)
+mod_2 <- arima(serie_2, order = pdq)
+
+mod_1
+mod_2
+```
+```
 
 ```{r}
 # Make a prediction using the best model
@@ -501,14 +545,14 @@ pr <- cumsum(pr) + as.vector(last_seasonal_diff)
 pr <- exp(pr)
 
 # Intervals
-tl <- exp(cumsum(forecast_result$lower[, 2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
-tu <- exp(cumsum(forecast_result$upper[, 2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
+tl <- exp(cumsum(forecast_result$lower[,2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
+tu <- exp(cumsum(forecast_result$upper[,2]) + as.vector(last_diff) + as.vector(last_seasonal_diff))
 
 
 # Create time series objects for the prediction intervals
-tl <- ts(c(tail(serie, 1), tl), start = ultim, freq = 12)
-tu <- ts(c(tail(serie, 1), tu), start = ultim, freq = 12)
-pr <- ts(c(tail(serie, 1), pr), start = ultim, freq = 12)
+tl <- ts(c(tail(serie,1),tl), start = ultim, freq = 12)
+tu <- ts(c(tail(serie,1),tu), start = ultim, freq = 12)
+pr <- ts(c(tail(serie,1),pr), start = ultim, freq = 12)
 
 # Plot the prediction
 ts.plot(serie, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = c(serie_end[1] - 2, serie_end[1] + 2), type = "o", main = paste("Model ARIMA(", paste(c(2, 0, 4), collapse = ","), ")", sep = ""))
@@ -517,3 +561,6 @@ abline(v = (serie_end[1] - 2):(serie_end[1] + 2), lty = 3, col = 4)
 # Print the predicted values
 print(pr)
 ```
+
+
+
