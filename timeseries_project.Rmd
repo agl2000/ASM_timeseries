@@ -525,7 +525,7 @@ tu <- ts(c(tail(serie,1),tu), start = ultim, freq = 12)
 pr <- ts(c(tail(serie,1),pr), start = ultim, freq = 12)
 
 # Plot the prediction
-ts.plot(serie, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = c(serie_end[1] - 2, serie_end[1] + 2), type = "o", main = paste("Model ARIMA(", paste(c(2, 0, 4), collapse = ","), ")", sep = ""))
+ts.plot(serie, tl, tu, pr, lty = c(1, 2, 2, 1), col = c(1, 4, 4, 2), xlim = c(serie_end[1] - 2, serie_end[1] + 2), type = "o", main = paste("Model ARIMA(", paste(c(0, 0, 2), collapse = ","), ")", sep = ""))
 abline(v = (serie_end[1] - 2):(serie_end[1] + 2), lty = 3, col = 4)
 
 # Print the predicted values
