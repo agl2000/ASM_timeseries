@@ -491,11 +491,46 @@ validation(best_model)
 validation(second_best_model)
 ```
 
+## Checking the stability of the proposed models
 ```{r}
-ultim=c(2019,12)
+ultim <- c(2018, 12)
+
+# Model 1: ARIMA(0, 0 ,2)
+pdq <- c(0, 0, 2)
+
+arima(d1_d12_ln_serie, order = c(0, 0, 2))
+
+serie_2 <- window(d1_d12_ln_serie, end = ultim)
+
+serie_1 <- window(d1_d12_ln_serie, end = ultim + c(1, 0))
+
+mod_1 <- arima(serie_1, order = pdq)
+mod_2 <- arima(serie_2, order = pdq)
+
+mod_1
+mod_2
+```
+
+```{r}
+# Model 2: ARIMA(1, 0 ,1)
+pdq <- c(1, 0, 1)
+
+mod_1 <- arima(serie_1, order = pdq)
+mod_2 <- arima(serie_2, order = pdq)
+
+mod_1
+mod_2
+```
+
+## Capability of prediction
+
+```{r}
 
 ```
 
+```{r}
+ultim <- c(2019, 12)
+```
 
 ```{r}
 # Make a prediction using the best model
