@@ -515,16 +515,21 @@ mod_2
 # Model 2: ARIMA(1, 0 ,1)
 pdq <- c(1, 0, 1)
 
-serie_2 <- window(d1_d12_ln_serie, end = ultim)
-
-serie_1 <- window(d1_d12_ln_serie, end = ultim + c(1, 0))
-
 mod_1 <- arima(serie_1, order = pdq)
 mod_2 <- arima(serie_2, order = pdq)
 
 mod_1
 mod_2
 ```
+
+## Capability of prediction
+
+```{r}
+
+```
+
+```{r}
+ultim <- c(2019, 12)
 ```
 
 ```{r}
